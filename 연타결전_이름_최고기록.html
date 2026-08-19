@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#111827">
+<title>2인용 연타 대결</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;background:#111827;color:white}
+body{touch-action:manipulation}
+#game{width:100vw;height:100vh;display:flex;flex-direction:column;position:relative}
+#arena{flex:1;display:flex;min-height:0;position:relative}
+.player{width:50%;height:100%;display:flex;flex-direction:column;align-items:center;position:relative;overflow:hidden}
+.p1{background:linear-gradient(145deg,#172554,#2563eb)}
+.p2{background:linear-gradient(145deg,#431407,#ea580c)}
+#divider{position:absolute;left:50%;top:0;bottom:0;width:5px;background:white;box-shadow:0 0 14px #fff;z-index:5;transform:translateX(-50%)}
+.name{font-size:clamp(18px,3vw,30px);font-weight:900;margin-top:clamp(10px,2vh,24px)}
+.score{font-size:clamp(42px,10vw,100px);font-weight:1000;line-height:1;margin-top:2vh;text-shadow:0 4px 12px #0008}
+.status{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:clamp(24px,6vw,64px);font-weight:1000;text-align:center;pointer-events:none}
+.tap{position:absolute;left:50%;top:58%;transform:translate(-50%,-50%);width:min(32vw,260px);height:min(32vw,260px);border-radius:50%;border:8px solid #ffffff99;background:#ffffff22;display:flex;align-items:center;justify-content:center;font-size:clamp(22px,4vw,42px);font-weight:1000;box-shadow:0 0 35px #0005;user-select:none}
+.tap:active{transform:translate(-50%,-50%) scale(.94);background:#ffffff44}
+.wins{position:absolute;bottom:125px;font-size:clamp(15px,2.5vw,25px);font-weight:800;background:#0005;padding:8px 16px;border-radius:999px}
+.crown{display:none;position:absolute;top:45%;font-size:clamp(70px,13vw,150px);filter:drop-shadow(0 6px 8px #0008);animation:pop .55s ease-out}
+.winner .crown{display:block}
+@keyframes pop{0%{transform:scale(.2) rotate(-15deg);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+#control{height:105px;min-height:105px;background:#0b1220;display:flex;align-items:center;justify-content:center;gap:12px;z-index:20}
+button{border:0;border-radius:14px;padding:16px 30px;font-size:clamp(16px,2.7vw,24px);font-weight:900;color:white;background:#16a34a;box-shadow:0 4px 0 #166534;cursor:pointer}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 #166534}
+button.secondary{background:#374151;box-shadow:0 4px 0 #1f2937}
+#overlay{position:absolute;inset:0;z-index:15;display:none;align-items:center;justify-content:center;pointer-events:none}
+#count{font-size:clamp(90px,25vw,250px);font-weight:1000;text-shadow:0 8px 25px #0009;animation:count .8s ease-out}
+@keyframes count{0%{transform:scale(1.5);opacity:0}35%{opacity:1}100%{transform:scale(1);opacity:1}}
+#go{font-size:clamp(55px,13vw,140px);font-weight:1000;text-shadow:0 8px 25px #0009;animation:go .7s ease-out}
+@keyframes go{0%{transform:scale(.4) rotate(-5deg)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+#timer{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:10;font-size:clamp(18px,3vw,30px);font-weight:1000;background:#0009;padding:7px 18px;border-radius:999px;display:none}
+#result{position:absolute;inset:0 0 105px 0;background:#0009;z-index:25;display:none;align-items:center;justify-content:center;flex-direction:column;text-align:center}
+#resultTitle{font-size:clamp(40px,8vw,85px);font-weight:1000}
+#resultSub{font-size:clamp(18px,3vw,30px);margin:10px 0 22px}
+@media (orientation:portrait){#game:before{content:"태블릿을 가로로 돌려주세요 ↔";position:absolute;inset:0;z-index:100;background:#111827;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;text-align:center;padding:30px}}
+</style>
+
+<style>
+#control{
+  position:fixed!important;
+  left:0!important;right:0!important;bottom:0!important;
+  height:110px!important;min-height:110px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  background:#0b1220!important;
+  z-index:99999!important;
+}
+#start{
+  display:block!important;visibility:visible!important;opacity:1!important;
+  position:relative!important;z-index:100000!important;
+  min-width:250px!important;height:72px!important;
+  padding:12px 30px!important;
+  background:#22c55e!important;color:#fff!important;
+  border:3px solid #fff!important;border-radius:16px!important;
+  font-size:28px!important;font-weight:1000!important;
+}
+#sound{position:relative!important;z-index:100000!important;}
+#result{bottom:110px!important;}
+</style>
+
+<style>
+.wins{
+  bottom:125px!important;
+  z-index:30!important;
+  white-space:nowrap!important;
+}
+#control{
+  height:110px!important;
+  min-height:110px!important;
+}
+</style>
+
+<style>
+.wins{
+  position:absolute!important;
+  top:82%!important;
+  bottom:auto!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  z-index:50!important;
+  white-space:nowrap!important;
+  padding:9px 18px!important;
+  font-size:clamp(15px,2.5vw,25px)!important;
+}
+#control{
+  height:110px!important;
+  min-height:110px!important;
+}
+</style>
+
+<style>
+#control{
+  position:fixed!important;
+  left:0!important;
+  right:0!important;
+  bottom:0!important;
+  height:85px!important;
+  min-height:85px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  padding:8px!important;
+  z-index:99999!important;
+  pointer-events:none!important;
+}
+#control button{
+  pointer-events:auto!important;
+  position:relative!important;
+  z-index:100000!important;
+}
+#start{
+  min-width:220px!important;
+  height:64px!important;
+  background:#22c55e!important;
+}
+#sound{
+  height:64px!important;
+}
+.wins{
+  z-index:100!important;
+}
+</style>
+
+<style>
+.score{
+  margin-top:0.8vh!important;
+}
+.tap{
+  top:51%!important;
+}
+.wins{
+  top:82%!important;
+}
+</style>
+
+<style>
+/* 총 승리 횟수는 버튼 영역과 완전히 분리 */
+.wins{
+  position:absolute!important;
+  top:auto!important;
+  bottom:18%!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  z-index:200!important;
+  white-space:nowrap!important;
+  background:rgba(0,0,0,.55)!important;
+}
+
+/* 아래쪽 버튼은 작은 영역만 차지 */
+#control{
+  height:70px!important;
+  min-height:70px!important;
+  padding:4px!important;
+  background:transparent!important;
+}
+
+/* 버튼을 조금 작게 해서 승리 횟수와 겹칠 공간 자체를 없앰 */
+#control button{
+  height:52px!important;
+  padding:8px 18px!important;
+  font-size:clamp(14px,2.2vw,21px)!important;
+}
+#start{
+  min-width:180px!important;
+}
+#sound{
+  min-width:120px!important;
+}
+</style>
+
+<meta name="application-name" content="연타결전">
+<meta name="apple-mobile-web-app-title" content="연타결전">
+<meta name="theme-color" content="#172554">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KPGRlZnM+CiA8bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBzdG9wLWNvbG9yPSIjMTcyNTU0Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZWE1ODBjIi8+PC9saW5lYXJHcmFkaWVudD4KIDxsaW5lYXJHcmFkaWVudCBpZD0iZiIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIHN0b3AtY29sb3I9IiNmZGU2OGEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNmNTllMGIiLz48L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+CjxyZWN0IHg9IjIwIiB5PSIyMCIgd2lkdGg9IjQ3MiIgaGVpZ2h0PSI0NzIiIHJ4PSIxMDUiIGZpbGw9InVybCgjZykiLz4KPHBhdGggZD0iTTI1NiA1NXY0MDIiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSI5IiBvcGFjaXR5PSIuOSIvPgo8Y2lyY2xlIGN4PSIxNTUiIGN5PSIyNTUiIHI9IjkyIiBmaWxsPSIjMjU2M2ViIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMTAiLz4KPGNpcmNsZSBjeD0iMzU3IiBjeT0iMjU1IiByPSI5MiIgZmlsbD0iI2VhNTgwYyIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjEwIi8+CjxwYXRoIGQ9Ik0xMTIgMjE1bDI1IDI1IDQ4LTUyTTMxNCAyMTVsMjUgMjUgNDgtNTIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik0yMDggODhsMTggMzQgMzggNS0yOCAyNyA3IDM4LTM0LTE4LTM0IDE4IDctMzgtMjgtMjcgMzgtNXoiIGZpbGw9InVybCgjZikiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSI3Ii8+Cjwvc3ZnPg==">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KPGRlZnM+CiA8bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBzdG9wLWNvbG9yPSIjMTcyNTU0Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZWE1ODBjIi8+PC9saW5lYXJHcmFkaWVudD4KIDxsaW5lYXJHcmFkaWVudCBpZD0iZiIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIHN0b3AtY29sb3I9IiNmZGU2OGEiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNmNTllMGIiLz48L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+CjxyZWN0IHg9IjIwIiB5PSIyMCIgd2lkdGg9IjQ3MiIgaGVpZ2h0PSI0NzIiIHJ4PSIxMDUiIGZpbGw9InVybCgjZykiLz4KPHBhdGggZD0iTTI1NiA1NXY0MDIiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSI5IiBvcGFjaXR5PSIuOSIvPgo8Y2lyY2xlIGN4PSIxNTUiIGN5PSIyNTUiIHI9IjkyIiBmaWxsPSIjMjU2M2ViIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMTAiLz4KPGNpcmNsZSBjeD0iMzU3IiBjeT0iMjU1IiByPSI5MiIgZmlsbD0iI2VhNTgwYyIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjEwIi8+CjxwYXRoIGQ9Ik0xMTIgMjE1bDI1IDI1IDQ4LTUyTTMxNCAyMTVsMjUgMjUgNDgtNTIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik0yMDggODhsMTggMzQgMzggNS0yOCAyNyA3IDM4LTM0LTE4LTM0IDE4IDctMzgtMjgtMjcgMzgtNXoiIGZpbGw9InVybCgjZikiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSI3Ii8+Cjwvc3ZnPg==">
+
+<style>
+.player .best{
+  position:absolute;
+  top:10px;
+  z-index:60;
+  font-size:clamp(13px,2vw,20px);
+  font-weight:900;
+  background:rgba(0,0,0,.35);
+  padding:7px 12px;
+  border-radius:999px;
+}
+.p1 .best{left:10px}
+.p2 .best{right:10px}
+.name{
+  cursor:pointer;
+  user-select:none;
+  position:relative;
+  z-index:70;
+  padding:7px 16px;
+  border-radius:12px;
+  background:rgba(0,0,0,.16);
+}
+.name:active{transform:scale(.96)}
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="arena">
+    <section class="player p1" id="p1">
+      <div class="best">최고 연타 <span id="best1">0</span></div><div class="name" id="name1" title="눌러서 이름 변경">🔵 1P</div>
+      <div class="score" id="s1">0</div>
+      <div class="tap" data-player="1">연타!</div>
+      <div class="crown">👑</div>
+      <div class="wins">총 승리 <span id="w1">0</span>회</div>
+    </section>
+    <div id="divider"></div>
+    <section class="player p2" id="p2">
+      <div class="best">최고 연타 <span id="best2">0</span></div><div class="name" id="name2" title="눌러서 이름 변경">🔴 2P</div>
+      <div class="score" id="s2">0</div>
+      <div class="tap" data-player="2">연타!</div>
+      <div class="crown">👑</div>
+      <div class="wins">총 승리 <span id="w2">0</span>회</div>
+    </section>
+  </div>
+  <div id="timer"></div>
+  <div id="overlay"><div id="count"></div></div>
+  <div id="result">
+    <div id="resultTitle"></div>
+    <div id="resultSub"></div>
+    <button id="again">다시하기</button>
+  </div>
+  <div id="control">
+    <button id="start" style="min-width:220px;">⚔️ 대결 시작</button>
+    <button id="sound" class="secondary">🔊 소리 ON</button>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+let state="idle", scores=[0,0], wins=[Number(localStorage.getItem("tapWins1")||0),Number(localStorage.getItem("tapWins2")||0)];
+let soundOn=true, timerId=null, endAt=0, audioCtx=null, musicTimer=null;
+let playerNames=[
+  localStorage.getItem("tapName1")||"1P",
+  localStorage.getItem("tapName2")||"2P"
+];
+let bestScores=[
+  Number(localStorage.getItem("tapBest1")||0),
+  Number(localStorage.getItem("tapBest2")||0)
+];
+$("name1").textContent="🔵 "+playerNames[0];
+$("name2").textContent="🔴 "+playerNames[1];
+$("best1").textContent=bestScores[0];
+$("best2").textContent=bestScores[1];
+$("w1").textContent=wins[0]; $("w2").textContent=wins[1];
+
+function audio(){
+  if(!soundOn) return;
+  audioCtx ||= new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==="suspended") audioCtx.resume();
+}
+function tone(freq,dur,type="sine",vol=.045,when=0){
+  if(!soundOn)return;
+  audio();
+  const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+  o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(0,audioCtx.currentTime+when);
+  g.gain.linearRampToValueAtTime(vol,audioCtx.currentTime+when+.015);
+  g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+when+dur);
+  o.connect(g).connect(audioCtx.destination);o.start(audioCtx.currentTime+when);o.stop(audioCtx.currentTime+when+dur+.03);
+}
+function startMusic(){
+  if(!soundOn||musicTimer)return;
+  audio();
+  const notes=[261.6,329.6,392,523.3,392,329.6,293.7,349.2];
+  let i=0;
+  musicTimer=setInterval(()=>{tone(notes[i++%notes.length],.18,"triangle",.018)},240);
+}
+function stopMusic(){
+  if(musicTimer){clearInterval(musicTimer);musicTimer=null;}
+  if(audioCtx && audioCtx.state==="running"){
+    audioCtx.suspend().catch(()=>{});
+  }
+}
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){
+    stopMusic();
+  }else if(soundOn && state!=="finished"){
+    audio();
+    startMusic();
+  }
+});
+window.addEventListener("pagehide",()=>{stopMusic();});
+window.addEventListener("beforeunload",()=>{stopMusic();});
+function fanfare(){
+  [523.3,659.3,783.99,1046.5,783.99,1046.5].forEach((n,i)=>tone(n,.28,"square",.07,i*.12));
+}
+function reset(){
+  scores=[0,0]; $("s1").textContent=0;$("s2").textContent=0;
+  $("p1").classList.remove("winner");$("p2").classList.remove("winner");
+  $("result").style.display="none"; $("timer").style.display="none";
+}
+function countdown(){
+  reset(); state="countdown"; $("start").disabled=true; startMusic();
+  $("overlay").style.display="flex";
+  const vals=["3","2","1"];
+  vals.forEach((v,i)=>setTimeout(()=>{ $("count").textContent=v; tone(440-i*60,.25,"sine",.06)},i*800));
+  setTimeout(()=>{
+    $("count").textContent="연타!";
+    tone(880,.22,"square",.08); setTimeout(()=>{$("overlay").style.display="none"; begin()},500);
+  },2400);
+}
+function begin(){
+  state="playing"; endAt=performance.now()+5000; $("timer").style.display="block"; updateTimer();
+}
+function updateTimer(){
+  if(state!=="playing")return;
+  const left=Math.max(0,endAt-performance.now());
+  $("timer").textContent="⏱️ "+(left/1000).toFixed(1)+"초";
+  if(left<=0){finish();return}
+  timerId=requestAnimationFrame(updateTimer);
+}
+function tap(p){
+  if(state!=="playing")return;
+  scores[p-1]++; $("s"+p).textContent=scores[p-1];
+  tone(130+p*45,.035,"square",.018);
+}
+function finish(){
+  state="finished";cancelAnimationFrame(timerId);$("timer").style.display="none";
+  for(let i=0;i<2;i++){
+    if(scores[i]>bestScores[i]){
+      bestScores[i]=scores[i];
+      localStorage.setItem("tapBest"+(i+1),bestScores[i]);
+      $("best"+(i+1)).textContent=bestScores[i];
+    }
+  }
+  let winner= scores[0]===scores[1]?0:(scores[0]>scores[1]?1:2);
+  if(winner){wins[winner-1]++;localStorage.setItem("tapWins"+winner,wins[winner-1]);$("w"+winner).textContent=wins[winner-1];$("p"+winner).classList.add("winner");}
+  fanfare();
+  $("resultTitle").textContent=winner?`🏆 ${playerNames[winner-1]} 승리!`:"🤝 무승부!";
+  $("resultSub").textContent=`${playerNames[0]} ${scores[0]}회  ·  ${playerNames[1]} ${scores[1]}회`;
+  $("result").style.display="flex";$("start").disabled=false;
+}
+document.querySelectorAll(".tap").forEach(el=>{
+  const p=Number(el.dataset.player);
+  el.addEventListener("pointerdown",e=>{e.preventDefault();tap(p)}, {passive:false});
+});
+$("start").onclick=()=>{audio();countdown()};
+$("again").onclick=()=>{audio();countdown()};
+$("sound").onclick=()=>{
+  soundOn=!soundOn;$("sound").textContent=soundOn?"🔊 소리 ON":"🔇 소리 OFF";
+  if(soundOn)startMusic();else stopMusic();
+};
+
+$("name1").onclick=()=>{
+  const n=prompt("1P의 이름을 입력하세요.",playerNames[0]);
+  if(n!==null && n.trim()){
+    playerNames[0]=n.trim().slice(0,10);
+    localStorage.setItem("tapName1",playerNames[0]);
+    $("name1").textContent="🔵 "+playerNames[0];
+  }
+};
+$("name2").onclick=()=>{
+  const n=prompt("2P의 이름을 입력하세요.",playerNames[1]);
+  if(n!==null && n.trim()){
+    playerNames[1]=n.trim().slice(0,10);
+    localStorage.setItem("tapName2",playerNames[1]);
+    $("name2").textContent="🔴 "+playerNames[1];
+  }
+};
+</script>
+</body>
+</html>
